@@ -1,11 +1,15 @@
 package sunset.android.bignerdranch.com.sunset;
 
+import android.animation.AnimatorSet;
+import android.animation.ArgbEvaluator;
 import android.animation.ObjectAnimator;
+import android.content.res.Resources;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.AccelerateInterpolator;
 
 public class SunsetFragment extends Fragment {
 
@@ -13,6 +17,13 @@ public class SunsetFragment extends Fragment {
 	private View mSceneView;
 	private View mSunView;
 	private View mSkyView;
+
+	//References to colours
+	private int mBlueSkyColour;
+	private int mSunsetSkyColour;
+	private int mNightSkyColour;
+
+	private boolean sunIsUp;
 
 	public static SunsetFragment newInstance() {
 		return new SunsetFragment();
@@ -22,14 +33,25 @@ public class SunsetFragment extends Fragment {
 	public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
 		View view = inflater.inflate(R.layout.fragment_sunset, container, false);
 
+		sunIsUp = true;
+
 		mSceneView = view;
 		mSunView = view.findViewById(R.id.sun);
 		mSkyView = view.findViewById(R.id.sky);
 
+		Resources resources = getResources();
+		mBlueSkyColour = resources.getColor(R.color.blue_sky);
+		mSunsetSkyColour = resources.getColor(R.color.sunset_sky);
+		mNightSkyColour = resources.getColor(R.color.night_sky);
+
 		mSceneView.setOnClickListener(new View.OnClickListener() {
 			@Override
 			public void onClick(View v) {
-				startAnimation();
+				if (sunIsUp) {
+					startSunsetAnimation();
+				} else {
+					startSunriseAnimation();
+				}
 			}
 		});
 
@@ -37,7 +59,7 @@ public class SunsetFragment extends Fragment {
 	}
 
 	/*Rect - position and size of a view relative to its parent*/
-	private void startAnimation() {
+	private void startSunsetAnimation() {
 		//Get the top of this view in pixels
 		float sunYStart = mSunView.getTop();
 		//Get the height of this view in pixels
@@ -47,12 +69,74 @@ public class SunsetFragment extends Fragment {
 		* offFloat(...) PARAMS
 		* - target object
 		* - property name
-		* - float values...*/
+		* - float values (start/end points)...*/
+
+		//Translate sun downward
 		ObjectAnimator heightAnimator = ObjectAnimator
 				.ofFloat(mSunView, "y", sunYStart, sunYEnd)
 				.setDuration(3000);
+		//Add acceleration to animation
+		heightAnimator.setInterpolator(new AccelerateInterpolator());
 
-		heightAnimator.start();
+		//Shift colour of background sky
+		ObjectAnimator sunsetSkyAnimator = ObjectAnimator
+				.ofInt(mSkyView, "backgroundColor", mBlueSkyColour, mSunsetSkyColour)
+				.setDuration(3000);
+		//ArgbEvaluator enables proper colour interpolation
+		sunsetSkyAnimator.setEvaluator(new ArgbEvaluator());
+
+		//Display night sky once sun sets
+		ObjectAnimator nightSkyAnimator = ObjectAnimator
+				.ofInt(mSkyView, "backgroundColor", mSunsetSkyColour, mNightSkyColour)
+				.setDuration(1500);
+		nightSkyAnimator.setEvaluator(new ArgbEvaluator());
+
+		//Construct AnimatorSet
+		AnimatorSet animatorSet = new AnimatorSet();
+		animatorSet
+				.play(heightAnimator)
+				.with(sunsetSkyAnimator)
+				.before(nightSkyAnimator);
+		animatorSet.start();
+
+		sunIsUp = false;
+	}
+
+	private void startSunriseAnimation() {
+		//Get the height of this view
+		float sunYStart = mSunView.getBottom();
+		//Get the top of this view
+		float sunYEnd = mSkyView.getHeight() / 2;
+
+		//Translate sun upward
+		ObjectAnimator heightAnimator = ObjectAnimator
+				.ofFloat(mSunView, "y", sunYStart, sunYEnd)
+				.setDuration(3000);
+		//Add acceleration to animation
+		heightAnimator.setInterpolator(new AccelerateInterpolator());
+
+		//Shift colour of background sky
+		ObjectAnimator sunriseSkyAnimator = ObjectAnimator
+				.ofInt(mSkyView, "backgroundColor", mSunsetSkyColour, mBlueSkyColour)
+				.setDuration(3000);
+		//ArgbEvaluator enables proper colour interpolation
+		sunriseSkyAnimator.setEvaluator(new ArgbEvaluator());
+
+		//Display day sky once sun rises
+		ObjectAnimator daySkyAnimator = ObjectAnimator
+				.ofInt(mSkyView, "backgroundColor", mNightSkyColour, mSunsetSkyColour)
+				.setDuration(1500);
+		daySkyAnimator.setEvaluator(new ArgbEvaluator());
+
+		//Construct AnimatorSet
+		AnimatorSet animatorSet = new AnimatorSet();
+		animatorSet
+				.play(heightAnimator)
+				.with(daySkyAnimator)
+				.before(sunriseSkyAnimator);
+		animatorSet.start();
+
+		sunIsUp = true;
 	}
 
 }
