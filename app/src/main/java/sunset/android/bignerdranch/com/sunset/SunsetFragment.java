@@ -23,7 +23,7 @@ public class SunsetFragment extends Fragment {
 	private int mSunsetSkyColour;
 	private int mNightSkyColour;
 
-	private boolean sunIsUp;
+	private boolean mSunIsUp;
 
 	public static SunsetFragment newInstance() {
 		return new SunsetFragment();
@@ -33,7 +33,7 @@ public class SunsetFragment extends Fragment {
 	public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
 		View view = inflater.inflate(R.layout.fragment_sunset, container, false);
 
-		sunIsUp = true;
+		mSunIsUp = true;
 
 		mSceneView = view;
 		mSunView = view.findViewById(R.id.sun);
@@ -47,7 +47,7 @@ public class SunsetFragment extends Fragment {
 		mSceneView.setOnClickListener(new View.OnClickListener() {
 			@Override
 			public void onClick(View v) {
-				if (sunIsUp) {
+				if (mSunIsUp) {
 					startSunsetAnimation();
 				} else {
 					startSunriseAnimation();
@@ -78,7 +78,7 @@ public class SunsetFragment extends Fragment {
 		//Add acceleration to animation
 		heightAnimator.setInterpolator(new AccelerateInterpolator());
 
-		//Shift colour of background sky
+		//Shift colour of background sky from blue to sunset
 		ObjectAnimator sunsetSkyAnimator = ObjectAnimator
 				.ofInt(mSkyView, "backgroundColor", mBlueSkyColour, mSunsetSkyColour)
 				.setDuration(3000);
@@ -99,14 +99,14 @@ public class SunsetFragment extends Fragment {
 				.before(nightSkyAnimator);
 		animatorSet.start();
 
-		sunIsUp = false;
+		mSunIsUp = false;
 	}
 
 	private void startSunriseAnimation() {
 		//Get the height of this view
-		float sunYStart = mSunView.getBottom();
+		float sunYStart = mSkyView.getHeight();
 		//Get the top of this view
-		float sunYEnd = mSkyView.getHeight() / 2;
+		float sunYEnd = 469;
 
 		//Translate sun upward
 		ObjectAnimator heightAnimator = ObjectAnimator
@@ -115,14 +115,14 @@ public class SunsetFragment extends Fragment {
 		//Add acceleration to animation
 		heightAnimator.setInterpolator(new AccelerateInterpolator());
 
-		//Shift colour of background sky
+		//Shift colour of background sky from sunset to blue
 		ObjectAnimator sunriseSkyAnimator = ObjectAnimator
 				.ofInt(mSkyView, "backgroundColor", mSunsetSkyColour, mBlueSkyColour)
 				.setDuration(3000);
 		//ArgbEvaluator enables proper colour interpolation
 		sunriseSkyAnimator.setEvaluator(new ArgbEvaluator());
 
-		//Display day sky once sun rises
+		//Display day sky before sun begins rising
 		ObjectAnimator daySkyAnimator = ObjectAnimator
 				.ofInt(mSkyView, "backgroundColor", mNightSkyColour, mSunsetSkyColour)
 				.setDuration(1500);
@@ -132,11 +132,11 @@ public class SunsetFragment extends Fragment {
 		AnimatorSet animatorSet = new AnimatorSet();
 		animatorSet
 				.play(heightAnimator)
-				.with(daySkyAnimator)
-				.before(sunriseSkyAnimator);
+				.with(sunriseSkyAnimator)
+				.after(daySkyAnimator);
 		animatorSet.start();
 
-		sunIsUp = true;
+		mSunIsUp = true;
 	}
 
 }
